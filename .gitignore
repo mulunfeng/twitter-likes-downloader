@@ -1,0 +1,36 @@
+# 下载的视频文件
+download/
+
+# 下载记录
+download_record.json
+
+# 调试文件
+debug_response.json
+
+# 配置文件（含敏感信息）
+config.py
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
