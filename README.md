@@ -8,37 +8,13 @@ Automatically download videos from a user's liked tweets with the highest qualit
 
 - ✅ **Highest Quality** - Automatically selects the video with the highest bitrate
 - ✅ **Incremental Download** - Records downloaded tweets, skips on next run
-- ✅ **Limit Count** - Only downloads the latest 50 videos
-- ✅ **Auto Update** - New likes are automatically discovered and downloaded
+- ✅ **Watch Mode** - Continuously monitors for new likes and auto-downloads
 - ✅ **Resume Support** - Saves progress after each download
-
-## Directory Structure
-
-```
-twitter-likes-downloader/
-├── main.py              # Main entry point
-├── config.py            # Configuration (cookies, proxy, etc.)
-├── twitter_api.py       # Twitter API wrapper
-├── video_extractor.py   # Video info extraction
-├── downloader.py        # Video downloader
-├── record_manager.py    # Download record management
-├── extract_ids.py       # Update Twitter Query IDs
-├── requirements.txt     # Dependencies
-├── download/            # Video save directory
-│   └── *.mp4
-└── download_record.json # Download history
-```
 
 ## Installation
 
 ```bash
 pip install requests
-```
-
-Or:
-
-```bash
-pip install -r requirements.txt
 ```
 
 ## Configuration
@@ -48,121 +24,111 @@ pip install -r requirements.txt
 1. Open browser and login to [x.com](https://x.com)
 2. Press `F12` to open Developer Tools
 3. Go to `Application` → `Cookies` → `https://x.com`
-4. Copy these two values:
+4. Copy these values:
    - `auth_token`
    - `ct0`
 
+**Note**: Cookies expire after ~2-4 weeks. You'll need to refresh them when you see HTTP 401 errors.
+
 ### 2. Create config.py
 
-Copy `config.example.py` to `config.py` and fill in your configuration:
+Copy `config.example.py` to `config.py` and fill in:
 
 ```python
-# Twitter Cookies
 COOKIES = {
     "auth_token": "your_auth_token",
     "ct0": "your_ct0_value"
 }
 
-# Target user screen_name (without @)
 TARGET_USER = "username"
-
-# Proxy (if needed)
-PROXY = "http://127.0.0.1:10808"  # Set to None if not needed
-```
-
-### 3. Update Query IDs (if API fails)
-
-Twitter periodically updates GraphQL Query IDs. If you get "Query not found" error:
-
-```bash
-python extract_ids.py
-```
-
-Then update the IDs in `config.py`:
-
-```python
-QUERY_ID_USER_BY_SCREEN_NAME = "new_id"
-QUERY_ID_LIKES = "new_id"
+PROXY = "http://127.0.0.1:10808"  # or None if not needed
 ```
 
 ## Usage
 
-### Run the downloader
+### Single Run Mode
 
 ```bash
 python main.py
 ```
 
-### Example output
+Downloads the latest 50 videos and exits.
 
+### Watch Mode (Recommended for Continuous Monitoring)
+
+```bash
+python main.py --watch
 ```
-============================================================
-Twitter/X Likes Video Downloader
-============================================================
-Target user: @username
-Max download: 50 latest videos
-============================================================
 
-[Step 1] Getting user info...
-[API] User ID: 1601427259302158337
+- **Continuously monitors** for new likes
+- **Auto-downloads** when new videos are detected
+- **Default interval**: 10 minutes
+- **Press Ctrl+C** to stop
 
-[Step 2] Fetching latest liked video tweets...
-[API] Getting page 1...
-[API] Found 15 video tweets on this page
-[Skip] Tweet 2043251055568560435 already downloaded (1/50)
-[Download] Tweet 204xxx (2/50)
-       Resolution: 1080x1440, bitrate: 10368000
-       Progress: 25.0% (6.0 MB)
-       ...
-[Download] Complete: download/xxx.mp4 (24.7 MB)
+### Custom Interval
 
-============================================================
-Download complete!
-============================================================
-Downloads this run: 3 videos
-Skipped this run: 47 already downloaded videos
-Processed this run: 50 video tweets
-Total history: 50 videos
-Download directory: download
-============================================================
+```bash
+python main.py --watch --interval 5
 ```
+
+Checks every 5 minutes.
+
+## Watch Mode Details
+
+| Feature | Description |
+|---------|-------------|
+| Continuous | Runs indefinitely until Ctrl+C |
+| Auto-detect | Checks latest 100 videos each scan |
+| Smart stop | Stops checking when no new videos found |
+| Safe | Records saved after each download |
+
+**How it works**:
+1. Every interval, scans the latest likes
+2. Skips already downloaded videos
+3. Downloads any new videos found
+4. Waits for next interval
 
 ## File Naming
 
-Video files are named as: `{tweet_id}_{timestamp}_{resolution}.mp4`
+`{tweet_id}_{timestamp}_{resolution}.mp4`
 
-Example: `2043251055568560435_20260412_085308_1080_1440.mp4`
-
-## Incremental Download
-
-- **First run**: Downloads the latest 50 video tweets
-- **Next run**: Skips already downloaded, only downloads new likes
-- **New likes**: Automatically downloads if within the top 50
+Example: `2043251055568560435_20260412_1080_1440.mp4`
 
 ## Common Issues
 
-### HTTP 404 / Query not found
+### HTTP 401 - Authentication Failed
 
-Twitter API Query IDs expired. Run `python extract_ids.py` to update.
+Cookies expired. Re-login to Twitter and update `config.py`.
 
-### Authentication failed (HTTP 401)
+### HTTP 404 - Query Not Found
 
-Cookies expired. Re-login to Twitter and get new `auth_token` and `ct0`.
+Run `python extract_ids.py` to update Query IDs.
 
-### Connection failed / SSL error
+### Connection Failed
 
-Check proxy configuration or try a different proxy.
+Check proxy configuration.
 
-### Download interrupted
+## Directory Structure
 
-Progress is saved automatically. Run `python main.py` again to continue.
+```
+twitter-likes-downloader/
+├── main.py              # Main program
+├── config.py            # Your configuration
+├── config.example.py    # Configuration template
+├── twitter_api.py       # Twitter API wrapper
+├── video_extractor.py   # Video extraction
+├── downloader.py        # Video downloader
+├── record_manager.py    # Download history
+├── extract_ids.py       # Update Query IDs
+├── download/            # Video files
+└── download_record.json # History
+```
 
 ## Notes
 
-- Please follow Twitter's terms of service, avoid excessive requests
-- Cookies may expire, need to update periodically
-- Proxy must support HTTPS
-- Downloaded videos are for personal use only, do not use commercially
+- Cookies expire after ~2-4 weeks
+- Follow Twitter's terms of service
+- Videos are for personal use only
 
 ## License
 
