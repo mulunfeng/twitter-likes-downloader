@@ -1,163 +1,169 @@
-# Twitter/X Likes 视频下载器
+# Twitter/X Likes Video Downloader
 
-自动下载指定用户点赞的视频推文，支持增量更新。
+English | [中文](README_CN.md)
 
-## 功能特点
+Automatically download videos from a user's liked tweets with the highest quality.
 
-- ✅ **最高清晰度** - 自动选择 bitrate 最高的视频版本
-- ✅ **增量下载** - 记录已下载的推文，下次运行自动跳过
-- ✅ **限制数量** - 只下载最新的 50 个视频，不下载更早期的
-- ✅ **自动更新** - 有新的 likes 视频时自动发现并下载
-- ✅ **断点续传** - 每次下载后保存记录，中断后可继续
+## Features
 
-## 目录结构
+- ✅ **Highest Quality** - Automatically selects the video with the highest bitrate
+- ✅ **Incremental Download** - Records downloaded tweets, skips on next run
+- ✅ **Limit Count** - Only downloads the latest 50 videos
+- ✅ **Auto Update** - New likes are automatically discovered and downloaded
+- ✅ **Resume Support** - Saves progress after each download
+
+## Directory Structure
 
 ```
-xcom/
-├── main.py              # 主程序入口
-├── config.py            # 配置文件（cookies、代理等）
-├── twitter_api.py       # Twitter API 封装
-├── video_extractor.py   # 视频信息提取
-├── downloader.py        # 视频下载器
-├── record_manager.py    # 下载记录管理
-├── extract_ids.py       # 更新 Twitter Query IDs
-├── requirements.txt     # 依赖列表
-├── download/            # 视频保存目录
+twitter-likes-downloader/
+├── main.py              # Main entry point
+├── config.py            # Configuration (cookies, proxy, etc.)
+├── twitter_api.py       # Twitter API wrapper
+├── video_extractor.py   # Video info extraction
+├── downloader.py        # Video downloader
+├── record_manager.py    # Download record management
+├── extract_ids.py       # Update Twitter Query IDs
+├── requirements.txt     # Dependencies
+├── download/            # Video save directory
 │   └── *.mp4
-└── download_record.json # 下载记录
+└── download_record.json # Download history
 ```
 
-## 安装依赖
+## Installation
 
 ```bash
 pip install requests
 ```
 
-或：
+Or:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 配置
+## Configuration
 
-### 1. 获取 Twitter Cookies
+### 1. Get Twitter Cookies
 
-1. 打开浏览器，登录 [x.com](https://x.com)
-2. 按 `F12` 打开开发者工具
-3. 切换到 `Application` → `Cookies` → `https://x.com`
-4. 复制以下两个值：
+1. Open browser and login to [x.com](https://x.com)
+2. Press `F12` to open Developer Tools
+3. Go to `Application` → `Cookies` → `https://x.com`
+4. Copy these two values:
    - `auth_token`
    - `ct0`
 
-### 2. 编辑 config.py
+### 2. Create config.py
 
-打开 `config.py`，修改以下配置：
+Copy `config.example.py` to `config.py` and fill in your configuration:
 
 ```python
 # Twitter Cookies
 COOKIES = {
-    "auth_token": "你的auth_token值",
-    "ct0": "你的ct0值"
+    "auth_token": "your_auth_token",
+    "ct0": "your_ct0_value"
 }
 
-# 目标用户 screen_name
-TARGET_USER = "your_target_username"  # 要下载的用户名
+# Target user screen_name (without @)
+TARGET_USER = "username"
 
-# 代理设置（如需要）
-PROXY = "http://127.0.0.1:10808"  # 你的代理地址，不需要则设为 None
+# Proxy (if needed)
+PROXY = "http://127.0.0.1:10808"  # Set to None if not needed
 ```
 
-### 3. 更新 Query IDs（如果 API 失效）
+### 3. Update Query IDs (if API fails)
 
-Twitter 会定期更新 GraphQL Query IDs，如果遇到 "Query not found" 错误：
+Twitter periodically updates GraphQL Query IDs. If you get "Query not found" error:
 
 ```bash
-py extract_ids.py
+python extract_ids.py
 ```
 
-然后将输出的 ID 更新到 `config.py` 中：
+Then update the IDs in `config.py`:
 
 ```python
-QUERY_ID_USER_BY_SCREEN_NAME = "新的ID"
-QUERY_ID_LIKES = "新的ID"
+QUERY_ID_USER_BY_SCREEN_NAME = "new_id"
+QUERY_ID_LIKES = "new_id"
 ```
 
-## 使用方法
+## Usage
 
-### 运行下载
+### Run the downloader
 
 ```bash
-py main.py
+python main.py
 ```
 
-### 输出示例
+### Example output
 
 ```
 ============================================================
-Twitter/X Likes 视频下载器
+Twitter/X Likes Video Downloader
 ============================================================
-目标用户: @your_target_username
-最大下载: 50 个最新视频
+Target user: @username
+Max download: 50 latest videos
 ============================================================
 
-[步骤 1] 获取用户信息...
-[API] 用户 ID: 1601427259302158337
+[Step 1] Getting user info...
+[API] User ID: 1601427259302158337
 
-[步骤 2] 获取最新的点赞视频推文...
-[API] 正在获取第 1 页...
-[API] 本页发现 15 个视频推文
-[跳过] 推文 2043251055568560435 已下载 (1/50)
-[下载] 推文 204xxx (2/50)
-       清晰度: 1080x1440, bitrate: 10368000
-       进度: 25.0% (6.0 MB)
+[Step 2] Fetching latest liked video tweets...
+[API] Getting page 1...
+[API] Found 15 video tweets on this page
+[Skip] Tweet 2043251055568560435 already downloaded (1/50)
+[Download] Tweet 204xxx (2/50)
+       Resolution: 1080x1440, bitrate: 10368000
+       Progress: 25.0% (6.0 MB)
        ...
-[下载] 完成: download/xxx.mp4 (24.7 MB)
+[Download] Complete: download/xxx.mp4 (24.7 MB)
 
 ============================================================
-下载完成!
+Download complete!
 ============================================================
-本次下载: 3 个视频
-本次跳过: 47 个已下载视频
-本次处理: 50 个视频推文
-历史总计: 50 个视频
-下载目录: download
+Downloads this run: 3 videos
+Skipped this run: 47 already downloaded videos
+Processed this run: 50 video tweets
+Total history: 50 videos
+Download directory: download
 ============================================================
 ```
 
-## 文件命名规则
+## File Naming
 
-视频文件命名格式：`{推文ID}_{发布时间}_{分辨率}.mp4`
+Video files are named as: `{tweet_id}_{timestamp}_{resolution}.mp4`
 
-示例：`2043251055568560435_20260412_085308_1080_1440.mp4`
+Example: `2043251055568560435_20260412_085308_1080_1440.mp4`
 
-## 增量下载说明
+## Incremental Download
 
-- **首次运行**：下载最新的 50 个视频推文
-- **再次运行**：跳过已下载的，只下载新的 likes 视频
-- **有新 likes**：如果点赞了新视频，下次运行会自动下载（仍在前 50 个限制内）
+- **First run**: Downloads the latest 50 video tweets
+- **Next run**: Skips already downloaded, only downloads new likes
+- **New likes**: Automatically downloads if within the top 50
 
-## 常见问题
+## Common Issues
 
-### 1. HTTP 404 / Query not found
+### HTTP 404 / Query not found
 
-Twitter API Query IDs 已过期，运行 `py extract_ids.py` 更新。
+Twitter API Query IDs expired. Run `python extract_ids.py` to update.
 
-### 2. 认证失败 (HTTP 401)
+### Authentication failed (HTTP 401)
 
-Cookies 已过期，需要重新登录 Twitter 获取新的 `auth_token` 和 `ct0`。
+Cookies expired. Re-login to Twitter and get new `auth_token` and `ct0`.
 
-### 3. 连接失败 / SSL 错误
+### Connection failed / SSL error
 
-检查代理配置是否正确，或尝试更换代理。
+Check proxy configuration or try a different proxy.
 
-### 4. 下载中断
+### Download interrupted
 
-记录会自动保存，再次运行 `py main.py` 即可继续。
+Progress is saved automatically. Run `python main.py` again to continue.
 
-## 注意事项
+## Notes
 
-- 请遵守 Twitter 使用条款，不要过度频繁请求
-- Cookies 可能会过期，需要定期更新
-- 代理必须支持 HTTPS
-- 下载的视频仅供个人收藏，请勿用于商业用途
+- Please follow Twitter's terms of service, avoid excessive requests
+- Cookies may expire, need to update periodically
+- Proxy must support HTTPS
+- Downloaded videos are for personal use only, do not use commercially
+
+## License
+
+MIT License
