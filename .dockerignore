@@ -1,0 +1,37 @@
+# Downloaded videos and record file
+download/
+download_record.json
+
+# Sensitive config
+config.py
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# System
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Debug
+debug_response.json
+
+# Git
+.git/
