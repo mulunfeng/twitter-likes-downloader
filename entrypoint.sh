@@ -52,11 +52,76 @@ PYEOF
 
 echo "[entrypoint] config.py generated."
 
-# Setup cron
+# Parse cron schedule and wait until next execution time
 CRON_SCHEDULE="${CRON_SCHEDULE:-0 2 * * *}"
-echo "$CRON_SCHEDULE cd /app && python main.py >> /proc/1/fd/1 2>&1" > /etc/cron.d/downloader
+read -r MINUTE HOUR <<< "$(echo "$CRON_SCHEDULE" | awk '{print $1, $2}')"
 
-echo "[entrypoint] Cron scheduled: $CRON_SCHEDULE"
-echo "[entrypoint] Starting cron in foreground..."
+echo "[entrypoint] Schedule: daily at ${HOUR}:${MINUTE}"
+echo "[entrypoint] Starting download loop..."
 
-exec cron -f
+run_download() {
+    echo "=================================================="
+    echo "[download] Started at $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "=================================================="
+    cd /app && python main.py 2>&1
+    local exit_code=$?
+    echo "=================================================="
+    echo "[download] Finished at $(date '+%Y-%m-%d %H:%M:%S') (exit: $exit_code)"
+    echo "=================================================="
+}
+
+# Initial run on startup
+run_download
+
+while true; do
+    # Calculate seconds until next scheduled time
+    NOW_MIN=$(date +%-M)
+    NOW_HOUR=$(date +%-H)
+    NOW_SEC=$(date +%-S)
+
+    # Handle cron expressions like "*/5" or "*"
+    if [[ "$MINUTE" == *"/"* ]]; then
+        STEP=${MINUTE#*/}
+        TARGET_MIN=$(( (NOW_MIN / STEP + 1) * STEP ))
+        TARGET_HOUR=$NOW_HOUR
+        if [ $TARGET_MIN -ge 60 ]; then
+            TARGET_MIN=$((TARGET_MIN - 60))
+            TARGET_HOUR=$(( (NOW_HOUR + 1) % 24 ))
+        fi
+    elif [[ "$HOUR" == *"/"* ]]; then
+        STEP=${HOUR#*/}
+        TARGET_HOUR=$(( (NOW_HOUR / STEP + 1) * STEP % 24 ))
+        TARGET_MIN=0
+    elif [[ "$MINUTE" == "*" ]]; then
+        TARGET_HOUR=$NOW_HOUR
+        TARGET_MIN=$((NOW_MIN + 1))
+        if [ $TARGET_MIN -ge 60 ]; then
+            TARGET_MIN=0
+            TARGET_HOUR=$(( (NOW_HOUR + 1) % 24 ))
+        fi
+    else
+        TARGET_HOUR=$HOUR
+        TARGET_MIN=$MINUTE
+        # If target time already passed today, schedule for tomorrow
+        if [ $TARGET_HOUR -lt $NOW_HOUR ] || { [ $TARGET_HOUR -eq $NOW_HOUR ] && [ $TARGET_MIN -le $NOW_MIN ]; }; then
+            TARGET_HOUR=$(( (TARGET_HOUR + 24) % 24 ))
+        fi
+    fi
+
+    # Calculate sleep seconds
+    TARGET_SEC=0
+    TARGET_TOTAL=$(( TARGET_HOUR * 3600 + TARGET_MIN * 60 + TARGET_SEC ))
+    NOW_TOTAL=$(( NOW_HOUR * 3600 + NOW_MIN * 60 + NOW_SEC ))
+    SLEEP_SEC=$(( TARGET_TOTAL - NOW_TOTAL ))
+    if [ $SLEEP_SEC -le 0 ]; then
+        SLEEP_SEC=$((SLEEP_SEC + 86400))
+    fi
+
+    NEXT_TIME=$(date -d "@$(( $(date +%s) + SLEEP_SEC ))" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -u -d "$SLEEP_SEC seconds" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "in ${SLEEP_SEC}s")
+    echo "[entrypoint] Next run: $NEXT_TIME (sleeping ${SLEEP_SEC}s)"
+    echo "[entrypoint] Press Ctrl+C or 'docker compose down' to stop"
+
+    sleep $SLEEP_SEC
+
+    run_download
+done
